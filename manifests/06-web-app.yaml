@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app
+  namespace: ecommerce-prod
+  labels:
+    tier: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web-app
+  template:
+    metadata:
+      labels:
+        app: web-app
+        tier: frontend
+    spec:
+      serviceAccountName: app-service-account
+      containers:
+      - name: web-container
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        envFrom:
+        - configMapRef:
+            name: app-config
+        env:
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: POSTGRES_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: POSTGRES_PASSWORD
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-app-svc
+  namespace: ecommerce-prod
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: web-app
